@@ -1,13 +1,13 @@
 import json
-import spotify
 import requests
 import base64
 from bs4 import BeautifulSoup
+import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 
 
 SPOTIFY_CLIENT_ID = "8d4f4ed4dd18467aa73a305a5c5078b5"
-spotify_client_secret = "3204b34256884dfebdd5340f51d70007"
+SPOTIFY_CLIENT_SECRET = "3204b34256884dfebdd5340f51d70007"
 spotify_base_link = "https://api.spotify.com/v1/"
 spotify_authorization_link = "https://accounts.spotify.com/api/token"
 spotify_redirect_uri = "https://mumachine.com/callback/"
@@ -24,40 +24,60 @@ playlist_body = {
 }
 
 
-# date = input("Which year do you want to travel to? Type the date in this format YYYY-MM-DD: ")
+date = input("Which year do you want to travel to? Type the date in this format YYYY-MM-DD: ")
 
-# response = requests.get(f"https://www.billboard.com/charts/hot-100/1990-07-05")
-# response_text = response.text
-#
-# soup = BeautifulSoup(response_text, "html.parser")
-# print(soup)
-#
-# titles = soup.find_all("h3", id="title-of-a-story")
-#
-#
-# all_list = [title.getText().strip() for title in titles[3:103]]
-# print(all_list)
-#
+response = requests.get(f"https://www.billboard.com/charts/hot-100/{date}")
+response_text = response.text
 
-response = requests.post(spotify_authorization_link, data=body_params, auth=(spotify_client_id, spotify_client_secret))
-response.raise_for_status()
-print(response.text)
-token_raw = json.loads(response.text)
-token = token_raw["access_token"]
-print(token)
-headers = {"Authorization": "Bearer {}".format(token)}
-get_Header = {
-    "Authorization": "Bearer" + token
-}
+soup = BeautifulSoup(response_text, "html.parser")
+
+titles = soup.find_all("h3", id="title-of-a-story")
 
 
-# response_me = requests.get(me_link, auth=headers)
-# response_me.raise_for_status()
-# print(response_me.text)
-# create_playlist = requests.post(url=playlist_link, auth=get_Header, data=playlist_body)
-# create_playlist.raise_for_status()
-# print(create_playlist.text)
+all_list = [title.getText().strip() for title in titles[3:103]]
+print(all_list)
 
-me_response = requests.get(me_link, get_Header)
-me_response.raise_for_status()
-print(me_response.text)
+
+# response = requests.post(spotify_authorization_link, data=body_params, auth=(spotify_client_id, spotify_client_secret))
+# response.raise_for_status()
+# print(response.text)
+# token_raw = json.loads(response.text)
+# token = token_raw["access_token"]
+# print(token)
+# headers = {"Authorization": "Bearer {}".format(token)}
+# get_Header = {
+#     "Authorization": "Bearer" + token
+# }
+
+
+
+#getting token with authorization info...
+sp = spotipy.Spotify(
+    auth_manager=SpotifyOAuth(
+        scope="playlist-modify-private",
+        redirect_uri="http://127.0.0.1:5500/",
+        client_id= SPOTIFY_CLIENT_ID,
+        client_secret= SPOTIFY_CLIENT_SECRET,
+        show_dialog=True,
+        cache_path="token.txt"
+    )
+)
+user_id = sp.current_user()["id"]
+
+
+create_playlist = sp.user_playlist_create(user=user_id, name=f"{date} Billboard 100", public=False, collaborative=False, description="yo its description")
+print(create_playlist["id"])
+
+song_uris = []
+year = date.split("-")[0]
+for song in all_list:
+    result = sp.search(q=f"track:{song} year:{year}", type="track")
+    print(result)
+    try:
+        uri = result["tracks"]["items"][0]["uri"]
+        song_uris.append(uri)
+    except IndexError:
+        print(f"{song} doesn't exist in Spotify. Skipped.")
+print(song_uris)
+
+playlist_add = sp.playlist_add_items(playlist_id=create_playlist["id"], items=song_uris, position=None)
