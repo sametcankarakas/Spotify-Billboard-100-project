@@ -1,3 +1,4 @@
+import os
 import json
 import requests
 import base64
@@ -6,14 +7,14 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 
 
-SPOTIFY_CLIENT_ID = "8d4f4ed4dd18467aa73a305a5c5078b5"
-SPOTIFY_CLIENT_SECRET = "3204b34256884dfebdd5340f51d70007"
+SPOTIFY_CLIENT_ID = os.environ['SPOTIFY_CLIENT_ID']
+SPOTIFY_CLIENT_SECRET = os.environ['SPOTIFY_CLIENT_SECRET']
 spotify_base_link = "https://api.spotify.com/v1/"
 spotify_authorization_link = "https://accounts.spotify.com/api/token"
 spotify_redirect_uri = "https://mumachine.com/callback/"
 grant_type = 'client_credentials'
-test_user = "https://open.spotify.com/user/31tfjsi2q2oqquaspl4izncmectq"
-playlist_link = "https://api.spotify.com/v1/users/31tfjsi2q2oqquaspl4izncmectq/playlists"
+test_user = os.environ['test_user']
+playlist_link = os.environ['playlist_link']
 me_link = "https://api.spotify.com/v1/me"
 body_params = {'grant_type': grant_type}
 
